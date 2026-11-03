@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATK Ceria - Mesin Kasir</title>
+<style>
+/* ===== TEMA WARNA (terang & gelap) ===== */
+:root{--bg:#eef3fb;--card:#fff;--text:#14213d;--muted:#64708a;--line:#dbe3f1;--blue:#1d4ed8;--blue2:#e3ebff;--yellow:#fbbf24;--red:#dc2626;--green:#16a34a;--shadow:0 2px 10px rgba(29,78,216,.10)}
+[data-theme=dark]{--bg:#0d1526;--card:#16213a;--text:#e8eefb;--muted:#9aa8c7;--line:#27355a;--blue:#5b8cff;--blue2:#1f2f58;--shadow:0 2px 10px rgba(0,0,0,.4)}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:78px;overflow-x:hidden}
+button,input,select{font:inherit;color:inherit}
+/* ===== HEADER ===== */
+header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:4px solid var(--yellow)}
+.logo{font-size:30px;background:var(--yellow);border-radius:12px;width:46px;height:46px;display:grid;place-items:center}
+header h1{font-size:19px}header small{opacity:.85;font-size:12px;display:block}
+#jam{margin-left:auto;text-align:right;font-size:12px;line-height:1.3}
+#jam b{font-size:16px;display:block}
+#btnTema{background:rgba(255,255,255,.18);border:0;border-radius:10px;width:42px;height:42px;font-size:20px;cursor:pointer}
+/* ===== NAVIGASI (bawah di HP, atas di laptop) ===== */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;z-index:20}
+nav button{flex:1;border:0;background:none;padding:8px 2px;font-size:10.5px;color:var(--muted);cursor:pointer;position:relative;min-height:58px}
+nav button span{display:block;font-size:21px}
+nav button.aktif{color:var(--blue);font-weight:700;box-shadow:inset 0 3px var(--yellow)}
+#badge{position:absolute;top:4px;right:calc(50% - 22px);background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px}
+main{max-width:1000px;margin:auto;padding:14px}
+.halaman{display:none}.halaman.aktif{display:block}
+h2{font-size:18px;margin-bottom:10px}
+/* ===== KOMPONEN UMUM ===== */
+.card{background:var(--card);border-radius:14px;padding:14px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.grid{display:grid;gap:10px}
+.stat{grid-template-columns:1fr 1fr}
+.stat .card b{font-size:20px;display:block;color:var(--blue)}.stat .card small{color:var(--muted)}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer;min-height:44px}
+.btn.kuning{background:var(--yellow);color:#14213d}.btn.merah{background:var(--red)}.btn.abu{background:var(--line);color:var(--text)}
+.btn.kecil{padding:6px 10px;min-height:36px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);min-height:44px}
+label{font-size:13px;color:var(--muted);display:block;margin:8px 0 3px}
+.baris{display:flex;gap:8px;flex-wrap:wrap}.baris>*{flex:1}
+/* ===== PRODUK ===== */
+.filter{display:grid;gap:8px;margin-bottom:12px}
+.produk{grid-template-columns:1fr 1fr}
+.kartu{display:flex;flex-direction:column;gap:4px}
+.kartu .ikon{font-size:30px}.kartu h3{font-size:14px}
+.kat{font-size:11px;background:var(--blue2);color:var(--blue);padding:2px 8px;border-radius:20px;align-self:flex-start}
+.harga{font-weight:700;color:var(--blue)}.stok{font-size:12px;color:var(--muted)}.stok.habis{color:var(--red);font-weight:700}
+.kartu .btn{margin-top:auto}
+.kosong{text-align:center;color:var(--muted);padding:24px}
+/* ===== KERANJANG ===== */
+.item{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.item .info{flex:1 1 130px}.item .info small{color:var(--muted)}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--blue2);color:var(--blue);font-size:18px;font-weight:700;cursor:pointer}
+.qty b{min-width:26px;text-align:center}
+.ringkas div{display:flex;justify-content:space-between;padding:5px 0}
+.total{font-size:20px;font-weight:800;color:var(--blue);border-top:2px solid var(--yellow);margin-top:6px;padding-top:10px!important}
+.peringatan{background:#fef3c7;color:#92400e;padding:9px;border-radius:10px;margin-top:8px;font-size:13px;display:none}
+.kembali{color:var(--green);font-weight:700}
+/* ===== TABEL SEDERHANA (daftar baris) ===== */
+.baris-data{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.baris-data .kiri{flex:1 1 150px}.baris-data small{color:var(--muted);display:block}
+/* ===== MODAL & TOAST ===== */
+#modal{position:fixed;inset:0;background:rgba(10,20,50,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:12px}
+#modal.show{display:flex}
+#modalBox{background:var(--card);border-radius:16px;padding:18px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+#modalBox h3{margin-bottom:8px}#modalBox .baris{margin-top:14px}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:6px;width:92%;max-width:380px}
+.notif{padding:12px 14px;border-radius:10px;color:#fff;font-weight:600;box-shadow:var(--shadow)}
+.notif.ok{background:var(--green)}.notif.gagal{background:var(--red)}
+/* ===== STRUK ===== */
+#strukArea{font-family:"Courier New",monospace;font-size:13px;color:#000;background:#fff;padding:12px;border-radius:8px}
+#strukArea .c{text-align:center}#strukArea hr{border:0;border-top:1px dashed #000;margin:6px 0}
+#strukArea .r{display:flex;justify-content:space-between;gap:6px}
+/* ===== LAPTOP ===== */
+@media(min-width:760px){
+ body{padding-bottom:0;padding-top:60px}
+ nav{top:0;bottom:auto;border-top:0;border-bottom:1px solid var(--line);justify-content:center}
+ nav button{flex:0 0 120px;min-height:60px;font-size:13px}nav button span{display:inline;font-size:16px}
+ header{margin-top:0}nav{position:static}body{padding-top:0}
+ .produk{grid-template-columns:repeat(4,1fr)}.stat{grid-template-columns:repeat(4,1fr)}
+ .filter{grid-template-columns:2fr 1fr}
+ .dua{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+}
+/* ===== CETAK: hanya struk yang tampil ===== */
+@media print{
+ body *{visibility:hidden}
+ #strukArea,#strukArea *{visibility:visible}
+ #modal{position:absolute;inset:auto;background:none;display:block;left:0;top:0}
+ #modalBox{box-shadow:none;max-height:none;overflow:visible;padding:0;max-width:100%}
+ #strukArea{position:absolute;left:0;top:0;width:80mm;padding:4mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✏️</div>
+  <div><h1>ATK Ceria</h1><small>Toko Alat Tulis • Mesin Kasir</small></div>
+  <div id="jam"><span id="tgl"></span><b id="wkt"></b></div>
+  <button id="btnTema" onclick="gantiTema()" title="Ganti tema">🌙</button>
+</header>
+
+<nav id="nav">
+  <button data-h="dashboard" class="aktif"><span>📊</span>Beranda</button>
+  <button data-h="kasir"><span>🛍️</span>Kasir</button>
+  <button data-h="keranjang"><span>🧺</span>Keranjang<i id="badge" hidden>0</i></button>
+  <button data-h="riwayat"><span>🧾</span>Riwayat</button>
+  <button data-h="produk"><span>📦</span>Produk</button>
+  <button data-h="laporan"><span>📈</span>Laporan</button>
+</nav>
+
+<main>
+  <!-- 1. DASHBOARD -->
+  <section id="dashboard" class="halaman aktif">
+    <h2>Ringkasan Toko</h2>
+    <div class="grid stat" id="statBox"></div>
+    <div class="card" style="margin-top:12px"><h2>⚠️ Stok Menipis (≤ 5)</h2><div id="stokTipis"></div></div>
+    <button class="btn kuning" style="width:100%;margin-top:12px" onclick="buka('kasir')">Mulai Berjualan</button>
+  </section>
+
+  <!-- 2. KASIR / DAFTAR PRODUK -->
+  <section id="kasir" class="halaman">
+    <h2>Kasir - Pilih Produk</h2>
+    <div class="filter">
+      <input id="cari" type="search" placeholder="🔍 Cari nama produk...">
+      <select id="filterKat"></select>
+    </div>
+    <div class="grid produk" id="daftarProduk"></div>
+    <button class="btn kuning" style="width:100%;margin-top:12px" onclick="buka('keranjang')">Lihat Keranjang 🧺</button>
+  </section>
+
+  <!-- 3. KERANJANG & PEMBAYARAN -->
+  <section id="keranjang" class="halaman">
+    <h2>Keranjang & Pembayaran</h2>
+    <div class="dua">
+      <div class="card"><div id="isiKeranjang"></div>
+        <button class="btn abu" style="width:100%;margin-top:10px" onclick="buka('kasir')">← Tambah Barang Lagi</button></div>
+      <div class="card ringkas" style="margin-top:12px">
+        <div><span>Subtotal</span><b id="tSub">Rp0</b></div>
+        <label>Diskon (opsional)</label>
+        <div class="baris"><input id="dskNilai" type="number" min="0" value="0" inputmode="numeric"><select id="dskTipe"><option value="persen">Persen (%)</option><option value="rupiah">Rupiah (Rp)</option></select></div>
+        <div><span>Potongan diskon</span><b id="tDsk">Rp0</b></div>
+        <div><label style="margin:0;display:flex;gap:8px;align-items:center"><input id="ppn" type="checkbox" style="width:22px;min-height:22px"> Aktifkan PPN 11%</label><b id="tPpn">Rp0</b></div>
+        <div class="total"><span>TOTAL</span><span id="tTotal">Rp0</span></div>
+        <label>Uang dibayarkan (Rp)</label>
+        <input id="bayar" type="number" min="0" inputmode="numeric" placeholder="Contoh: 50000">
+        <button class="btn abu kecil" style="margin-top:6px" onclick="uangPas()">Uang Pas</button>
+        <div id="warn" class="peringatan">⚠️ Uang pembayaran masih kurang dari total belanja.</div>
+        <div><span>Kembalian</span><b id="tKembali" class="kembali">Rp0</b></div>
+        <button id="btnSelesai" class="btn" style="width:100%;margin-top:8px" onclick="selesaikan()" disabled>✅ Selesaikan Transaksi</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. RIWAYAT -->
+  <section id="riwayat" class="halaman">
+    <h2>Riwayat Transaksi</h2>
+    <div class="card"><div id="daftarRiwayat"></div></div>
+    <button class="btn merah" style="width:100%;margin-top:12px" onclick="hapusRiwayat()">🗑️ Hapus Semua Riwayat</button>
+  </section>
+
+  <!-- 5. KELOLA PRODUK -->
+  <section id="produk" class="halaman">
+    <h2>Kelola Produk</h2>
+    <button class="btn" style="width:100%;margin-bottom:12px" onclick="formProduk()">➕ Tambah Produk</button>
+    <div class="card"><div id="daftarKelola"></div></div>
+  </section>
+
+  <!-- 6. LAPORAN -->
+  <section id="laporan" class="halaman">
+    <h2>Laporan Penjualan Harian</h2>
+    <label>Pilih tanggal</label><input id="tglLaporan" type="date">
+    <div class="grid stat" style="margin-top:10px" id="statLaporan"></div>
+    <div class="card" style="margin-top:12px"><h2>Barang Terjual</h2><div id="rinciLaporan"></div></div>
+  </section>
+</main>
+
+<div id="modal"><div id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================
+   ATK CERIA - MESIN KASIR (HTML + CSS + JS dalam 1 file)
+   Data disimpan di localStorage browser.
+   ===================================================== */
+
+// ---------- Kunci penyimpanan ----------
+const K_PRODUK = 'atkceria_produk', K_RIWAYAT = 'atkceria_riwayat', K_TEMA = 'atkceria_tema';
+
+// ---------- Data awal (hanya dipakai jika localStorage masih kosong) ----------
+const DATA_AWAL = [
+  ['Buku Tulis 38 Lembar','Buku',4000,60,'📓'],['Buku Gambar A4','Buku',6000,30,'🎨'],
+  ['Pulpen Hitam','Alat Tulis',3000,100,'🖊️'],['Pulpen Biru','Alat Tulis',3000,80,'🖋️'],
+  ['Pensil 2B','Alat Tulis',2500,90,'✏️'],['Spidol Papan Tulis','Alat Tulis',9000,25,'🖍️'],
+  ['Stabilo','Alat Tulis',7000,40,'🖌️'],['Pensil Warna 12 Warna','Alat Tulis',18000,20,'🌈'],
+  ['Penghapus','Perlengkapan',2000,70,'🧽'],['Penggaris 30 cm','Perlengkapan',4000,45,'📏'],
+  ['Rautan','Perlengkapan',2500,50,'🔧'],['Gunting','Perlengkapan',8000,18,'✂️'],
+  ['Lem Stick','Perlengkapan',5000,35,'🧴'],['Tempat Pensil','Perlengkapan',15000,15,'👝'],
+  ['Map Plastik','Kertas & Map',3500,60,'📁'],['Kertas HVS A4 (rim)','Kertas & Map',55000,12,'📄']
+].map((p,i)=>({id:i+1,nama:p[0],kategori:p[1],harga:p[2],stok:p[3],ikon:p[4]}));
+
+// ---------- Fungsi bantu ----------
+const $ = id => document.getElementById(id);
+const rp = n => 'Rp' + Number(n).toLocaleString('id-ID');           // format Rupiah
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function muat(kunci, awal){                                          // baca localStorage dengan aman
+  try { const d = localStorage.getItem(kunci); return d ? JSON.parse(d) : awal; } catch(e){ return awal; }
+}
+function simpan(kunci, data){ try { localStorage.setItem(kunci, JSON.stringify(data)); } catch(e){ toast('Gagal menyimpan data','gagal'); } }
+const kunciTgl = d => { d = new Date(d); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const tglIndo = d => new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+const jamIndo = d => new Date(d).toLocaleTimeString('id-ID');
+
+// ---------- State ----------
+// Jika data sudah ada di localStorage, TIDAK ditimpa dengan data awal.
+let produk  = muat(K_PRODUK, null);
+if (!produk) { produk = DATA_AWAL; simpan(K_PRODUK, produk); }
+let riwayat = muat(K_RIWAYAT, []);
+let keranjang = [];            // [{id, qty}]
+let hasil = {total:0};         // hasil hitung terakhir
+const cariProduk = id => produk.find(p => p.id === id);
+
+// ---------- Notifikasi & dialog ----------
+function toast(pesan, jenis='ok'){
+  const el = document.createElement('div'); el.className = 'notif ' + jenis; el.textContent = pesan;
+  $('toast').appendChild(el); setTimeout(()=>el.remove(), 2800);
+}
+function bukaModal(html){ $('modalBox').innerHTML = html; $('modal').classList.add('show'); }
+function tutupModal(){ $('modal').classList.remove('show'); }
+$('modal').addEventListener('click', e => { if(e.target.id==='modal') tutupModal(); });
+function konfirmasi(pesan, tombol='Ya, Lanjutkan'){            // dialog konfirmasi (mengembalikan true/false)
+  return new Promise(res => {
+    bukaModal(`<h3>Konfirmasi</h3><p>${pesan}</p><div class="baris"><button class="btn abu" id="cTidak">Batal</button><button class="btn" id="cYa">${tombol}</button></div>`);
+    $('cTidak').onclick = () => { tutupModal(); res(false); };
+    $('cYa').onclick = () => { tutupModal(); res(true); };
+  });
+}
+
+// ---------- Navigasi antar halaman (tanpa refresh) ----------
+function buka(h){
+  document.querySelectorAll('.halaman').forEach(s => s.classList.toggle('aktif', s.id===h));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('aktif', b.dataset.h===h));
+  if(h==='dashboard') renderDashboard();
+  if(h==='laporan') renderLaporan();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => buka(b.dataset.h));
+
+// ---------- Jam & tanggal otomatis ----------
+function updateJam(){ const n = new Date(); $('tgl').textContent = tglIndo(n); $('wkt').textContent = jamIndo(n); }
+setInterval(updateJam, 1000); updateJam();
+
+// ---------- Mode gelap / terang ----------
+function setTema(t){ document.documentElement.dataset.theme = t; $('btnTema').textContent = t==='dark' ? '☀️' : '🌙'; }
+function gantiTema(){ const t = document.documentElement.dataset.theme==='dark' ? 'light' : 'dark'; setTema(t); simpan(K_TEMA, t); }
+setTema(muat(K_TEMA, window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+// ---------- DASHBOARD ----------
+function transaksiHari(kunci){ return riwayat.filter(t => kunciTgl(t.waktu) === kunci); }
+function renderDashboard(){
+  const hari = transaksiHari(kunciTgl(new Date()));
+  const stokTotal = produk.reduce((s,p)=>s+p.stok,0);
+  $('statBox').innerHTML =
+    `<div class="card"><small>Jumlah Produk</small><b>${produk.length}</b></div>
+     <div class="card"><small>Total Stok</small><b>${stokTotal}</b></div>
+     <div class="card"><small>Pendapatan Hari Ini</small><b>${rp(hari.reduce((s,t)=>s+t.total,0))}</b></div>
+     <div class="card"><small>Transaksi Hari Ini</small><b>${hari.length}</b></div>`;
+  const tipis = produk.filter(p => p.stok <= 5);
+  $('stokTipis').innerHTML = tipis.length ? tipis.map(p => `<div class="baris-data"><span>${p.ikon} ${esc(p.nama)}</span><b class="${p.stok===0?'stok habis':''}">Sisa ${p.stok}</b></div>`).join('')
+    : '<div class="kosong">Semua stok aman 👍</div>';
+}
+
+// ---------- KASIR: daftar produk + cari + filter ----------
+function renderKategori(){
+  const sebelum = $('filterKat').value || 'Semua';
+  const kats = ['Semua', ...new Set(produk.map(p => p.kategori))];
+  $('filterKat').innerHTML = kats.map(k => `<option ${k===sebelum?'selected':''}>${esc(k)}</option>`).join('');
+}
+function renderProduk(){
+  const kata = $('cari').value.trim().toLowerCase(), kat = $('filterKat').value;
+  const list = produk.filter(p => p.nama.toLowerCase().includes(kata) && (kat==='Semua' || p.kategori===kat));
+  $('daftarProduk').innerHTML = list.length ? list.map(p => `
+    <div class="card kartu">
+      <div class="ikon">${p.ikon||'📦'}</div><h3>${esc(p.nama)}</h3>
+      <span class="kat">${esc(p.kategori)}</span><div class="harga">${rp(p.harga)}</div>
+      <div class="stok ${p.stok===0?'habis':''}">${p.stok===0?'Stok habis':'Stok: '+p.stok}</div>
+      <button class="btn" ${p.stok===0?'disabled':''} onclick="tambahKeranjang(${p.id})">+ Keranjang</button>
+    </div>`).join('') : '<div class="kosong" style="grid-column:1/-1">Produk tidak ditemukan 🔎</div>';
+}
+$('cari').addEventListener('input', renderProduk);
+$('filterKat').addEventListener('change', renderProduk);
+
+// ---------- KERANJANG ----------
+function tambahKeranjang(id){
+  const p = cariProduk(id), it = keranjang.find(c => c.id===id);
+  const qty = it ? it.qty : 0;
+  if(qty + 1 > p.stok){ toast('Jumlah melebihi stok tersedia!','gagal'); return; }
+  it ? it.qty++ : keranjang.push({id, qty:1});
+  toast(p.nama + ' ditambahkan'); renderKeranjang();
+}
+function ubahQty(id, d){
+  const it = keranjang.find(c => c.id===id), p = cariProduk(id);
+  if(it.qty + d > p.stok){ toast('Jumlah melebihi stok tersedia!','gagal'); return; }
+  it.qty += d;
+  if(it.qty <= 0) keranjang = keranjang.filter(c => c.id!==id);
+  renderKeranjang();
+}
+function hapusItem(id){ keranjang = keranjang.filter(c => c.id!==id); toast('Barang dihapus dari keranjang'); renderKeranjang(); }
+function renderKeranjang(){
+  $('isiKeranjang').innerHTML = keranjang.length ? keranjang.map(c => {
+    const p = cariProduk(c.id);
+    return `<div class="item">
+      <div class="info"><b>${esc(p.nama)}</b><br><small>${rp(p.harga)} × ${c.qty} = <b>${rp(p.harga*c.qty)}</b></small></div>
+      <div class="qty"><button onclick="ubahQty(${p.id},-1)">−</button><b>${c.qty}</b><button onclick="ubahQty(${p.id},1)">+</button></div>
+      <button class="btn merah kecil" onclick="hapusItem(${p.id})">Hapus</button></div>`;
+  }).join('') : '<div class="kosong">Keranjang masih kosong 🧺<br>Pilih produk di menu Kasir.</div>';
+  const jml = keranjang.reduce((s,c)=>s+c.qty,0);
+  $('badge').textContent = jml; $('badge').hidden = jml===0;
+  hitung();
+}
+
+// ---------- PERHITUNGAN (semua memakai angka) ----------
+function hitung(){
+  const sub = keranjang.reduce((s,c) => s + cariProduk(c.id).harga * c.qty, 0);
+  let nilai = Math.max(0, Number($('dskNilai').value) || 0);
+  const diskon = $('dskTipe').value==='persen' ? Math.round(sub * Math.min(nilai,100) / 100) : Math.min(nilai, sub);
+  const ppn = $('ppn').checked ? Math.round((sub - diskon) * 0.11) : 0;
+  const total = sub - diskon + ppn;
+  const bayar = Number($('bayar').value) || 0, kembali = bayar - total;
+  hasil = {sub, diskon, ppn, total, bayar, kembali};
+  $('tSub').textContent = rp(sub); $('tDsk').textContent = '-' + rp(diskon);
+  $('tPpn').textContent = rp(ppn); $('tTotal').textContent = rp(total);
+  const kurang = bayar < total;
+  $('warn').style.display = (keranjang.length && $('bayar').value!=='' && kurang) ? 'block' : 'none';
+  $('tKembali').textContent = rp(kurang ? 0 : kembali);
+  $('btnSelesai').disabled = !(keranjang.length > 0 && !kurang);   // tidak aktif jika kosong / kurang
+}
+['dskNilai','dskTipe','ppn','bayar'].forEach(id => $(id).addEventListener('input', hitung));
+$('dskTipe').addEventListener('change', hitung);
+function uangPas(){ $('bayar').value = hasil.total; hitung(); }
+
+// ---------- SELESAIKAN TRANSAKSI ----------
+async function selesaikan(){
+  hitung();
+  if(!keranjang.length){ toast('Keranjang masih kosong','gagal'); return; }
+  if(hasil.bayar < hasil.total){ toast('Uang pembayaran kurang!','gagal'); return; }
+  if(!await konfirmasi(`Selesaikan transaksi dengan total <b>${rp(hasil.total)}</b>?`, 'Selesaikan')) return;
+  // nomor transaksi: TRX-TanggalHariIni-urutan
+  const kunci = kunciTgl(new Date());
+  const no = 'TRX-' + kunci.replace(/-/g,'') + '-' + String(transaksiHari(kunci).length + 1).padStart(3,'0');
+  const trx = {
+    no, waktu: new Date().toISOString(),
+    item: keranjang.map(c => { const p = cariProduk(c.id); return {nama:p.nama, harga:p.harga, qty:c.qty}; }),
+    ...hasil
+  };
+  keranjang.forEach(c => { cariProduk(c.id).stok -= c.qty; });     // kurangi stok
+  riwayat.unshift(trx);
+  simpan(K_PRODUK, produk); simpan(K_RIWAYAT, riwayat);
+  keranjang = []; $('bayar').value = ''; $('dskNilai').value = 0; $('ppn').checked = false;
+  renderSemua(); toast('Transaksi berhasil disimpan ✅');
+  lihatStruk(trx);
+}
+
+// ---------- STRUK ----------
+function lihatStruk(trx){
+  const baris = trx.item.map(i => `<div>${esc(i.nama)}</div><div class="r"><span>${i.qty} x ${rp(i.harga)}</span><span>${rp(i.qty*i.harga)}</span></div>`).join('');
+  bukaModal(`<div id="strukArea">
+    <div class="c"><b>ATK CERIA</b><br>Toko Alat Tulis</div><hr>
+    <div>No : ${trx.no}</div><div>Tgl: ${tglIndo(trx.waktu)}</div><div>Jam: ${jamIndo(trx.waktu)}</div><hr>
+    ${baris}<hr>
+    <div class="r"><span>Subtotal</span><span>${rp(trx.sub)}</span></div>
+    ${trx.diskon>0?`<div class="r"><span>Diskon</span><span>-${rp(trx.diskon)}</span></div>`:''}
+    ${trx.ppn>0?`<div class="r"><span>PPN 11%</span><span>${rp(trx.ppn)}</span></div>`:''}
+    <div class="r"><b>TOTAL</b><b>${rp(trx.total)}</b></div>
+    <div class="r"><span>Tunai</span><span>${rp(trx.bayar)}</span></div>
+    <div class="r"><span>Kembalian</span><span>${rp(trx.kembali)}</span></div><hr>
+    <div class="c">Terima kasih sudah berbelanja!</div></div>
+    <div class="baris"><button class="btn abu" onclick="tutupModal();buka('kasir')">← Kembali ke Kasir</button><button class="btn" onclick="window.print()">🖨️ Cetak Struk</button></div>`);
+}
+
+// ---------- RIWAYAT ----------
+function renderRiwayat(){
+  $('daftarRiwayat').innerHTML = riwayat.length ? riwayat.map((t,i) => `
+    <div class="baris-data"><div class="kiri"><b>${t.no}</b><small>${tglIndo(t.waktu)}, ${jamIndo(t.waktu)} • ${t.item.reduce((s,x)=>s+x.qty,0)} barang</small></div>
+    <b>${rp(t.total)}</b><button class="btn kecil" onclick="lihatStruk(riwayat[${i}])">Detail</button></div>`).join('')
+    : '<div class="kosong">Belum ada transaksi.</div>';
+}
+async function hapusRiwayat(){
+  if(!riwayat.length){ toast('Riwayat sudah kosong','gagal'); return; }
+  if(!await konfirmasi('Semua riwayat transaksi akan dihapus permanen. Lanjutkan?', 'Hapus Semua')) return;
+  riwayat = []; simpan(K_RIWAYAT, riwayat); renderSemua(); toast('Riwayat berhasil dihapus');
+}
+
+// ---------- KELOLA PRODUK ----------
+function renderKelola(){
+  $('daftarKelola').innerHTML = produk.length ? produk.map(p => `
+    <div class="baris-data"><div class="kiri"><b>${p.ikon||'📦'} ${esc(p.nama)}</b><small>${esc(p.kategori)} • ${rp(p.harga)} • Stok ${p.stok}</small></div>
+    <button class="btn kecil" onclick="formProduk(${p.id})">Edit</button><button class="btn merah kecil" onclick="hapusProduk(${p.id})">Hapus</button></div>`).join('')
+    : '<div class="kosong">Belum ada produk. Tekan "Tambah Produk".</div>';
+}
+function formProduk(id){
+  const p = id ? cariProduk(id) : {nama:'',kategori:'',harga:'',stok:''};
+  const kats = [...new Set(produk.map(x => x.kategori))];
+  bukaModal(`<h3>${id?'Edit':'Tambah'} Produk</h3>
+    <label>Nama produk</label><input id="fNama" value="${esc(p.nama)}">
+    <label>Kategori</label><input id="fKat" list="listKat" value="${esc(p.kategori)}"><datalist id="listKat">${kats.map(k=>`<option value="${esc(k)}">`).join('')}</datalist>
+    <label>Harga (Rp)</label><input id="fHarga" type="number" min="0" inputmode="numeric" value="${p.harga}">
+    <label>Stok</label><input id="fStok" type="number" min="0" inputmode="numeric" value="${p.stok}">
+    <div class="baris"><button class="btn abu" onclick="tutupModal()">Batal</button><button class="btn" onclick="simpanProduk(${id||0})">Simpan</button></div>`);
+}
+function simpanProduk(id){
+  const nama = $('fNama').value.trim(), kat = $('fKat').value.trim() || 'Lainnya';
+  const harga = $('fHarga').value, stok = $('fStok').value;
+  // Validasi
+  if(!nama) return toast('Nama produk tidak boleh kosong','gagal');
+  if(harga==='' || isNaN(harga) || Number(harga) < 0) return toast('Harga tidak boleh kosong atau negatif','gagal');
+  if(stok==='' || isNaN(stok) || Number(stok) < 0 || !Number.isInteger(Number(stok))) return toast('Stok harus bilangan bulat, tidak negatif','gagal');
+  if(id){
+    const p = cariProduk(id); Object.assign(p, {nama, kategori:kat, harga:Number(harga), stok:Number(stok)});
+    const it = keranjang.find(c => c.id===id);                     // sesuaikan keranjang jika stok dikurangi
+    if(it && it.qty > p.stok){ it.qty = p.stok; if(it.qty===0) keranjang = keranjang.filter(c=>c.id!==id); }
+    toast('Produk berhasil diperbarui');
+  } else {
+    produk.push({id: produk.reduce((m,p)=>Math.max(m,p.id),0)+1, nama, kategori:kat, harga:Number(harga), stok:Number(stok), ikon:'📦'});
+    toast('Produk berhasil ditambahkan');
+  }
+  simpan(K_PRODUK, produk); tutupModal(); renderSemua();
+}
+async function hapusProduk(id){
+  const p = cariProduk(id);
+  if(!await konfirmasi(`Hapus produk <b>${esc(p.nama)}</b>?`, 'Hapus')) return;
+  produk = produk.filter(x => x.id!==id); keranjang = keranjang.filter(c => c.id!==id);
+  simpan(K_PRODUK, produk); renderSemua(); toast('Produk berhasil dihapus');
+}
+
+// ---------- LAPORAN HARIAN ----------
+function renderLaporan(){
+  if(!$('tglLaporan').value) $('tglLaporan').value = kunciTgl(new Date());
+  const list = transaksiHari($('tglLaporan').value), per = {};
+  list.forEach(t => t.item.forEach(i => { per[i.nama] = per[i.nama] || {qty:0, uang:0}; per[i.nama].qty += i.qty; per[i.nama].uang += i.qty*i.harga; }));
+  $('statLaporan').innerHTML =
+    `<div class="card"><small>Total Pendapatan</small><b>${rp(list.reduce((s,t)=>s+t.total,0))}</b></div>
+     <div class="card"><small>Jumlah Transaksi</small><b>${list.length}</b></div>
+     <div class="card"><small>Barang Terjual</small><b>${list.reduce((s,t)=>s+t.item.reduce((a,i)=>a+i.qty,0),0)}</b></div>`;
+  const nama = Object.keys(per);
+  $('rinciLaporan').innerHTML = nama.length ? nama.map(n => `<div class="baris-data"><span>${esc(n)}</span><span>${per[n].qty} pcs • <b>${rp(per[n].uang)}</b></span></div>`).join('')
+    : '<div class="kosong">Belum ada penjualan pada tanggal ini.</div>';
+}
+$('tglLaporan').addEventListener('change', renderLaporan);
+
+// ---------- Render ulang semua bagian ----------
+function renderSemua(){ renderKategori(); renderProduk(); renderKeranjang(); renderRiwayat(); renderKelola(); renderDashboard(); renderLaporan(); }
+renderSemua();
+</script>
+</body>
+</html>
